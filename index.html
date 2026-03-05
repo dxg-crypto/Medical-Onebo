@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メディカルワンボ - 診察ポータル</title>
+    <style>
+        /* フルHD (1920x1080) キオスクモード用のリセットとベース設定 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+            background-color: #E8F0F6; /* 清潔感のある薄いブルー */
+            user-select: none; /* タッチパネルでのテキスト選択を防止 */
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 1920px;
+            height: 1080px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #0056B3; /* ファストドクターブルーに近い色 */
+            color: white;
+            padding: 40px 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 3.5rem;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            font-size: 1.8rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            padding: 60px;
+            background-image: linear-gradient(to bottom, #ffffff, #f4f7f9);
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70%;
+            max-width: 1200px;
+            padding: 50px;
+            font-size: 3rem;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 30px;
+            box-shadow: 0 15px 25px rgba(0,0,0,0.1);
+            transition: transform 0.1s, box-shadow 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-button:active {
+            transform: translateY(10px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        }
+
+        /* 症状入力フォームへのメイン導線 */
+        .btn-primary {
+            background-color: #F07E32; /* ファストドクターのオレンジに近い色 */
+            color: white;
+            border: 4px solid #F07E32;
+        }
+
+        /* ご家族との通話導線 */
+        .btn-family {
+            background-color: #4CAF50; 
+            color: white;
+            border: 4px solid #4CAF50;
+        }
+
+        /* 内科・発熱外来の詳細ページ導線 */
+        .btn-secondary {
+            background-color: white;
+            color: #0056B3;
+            border: 4px solid #0056B3;
+            font-size: 2.5rem;
+            padding: 40px;
+        }
+
+        .icon {
+            margin-right: 30px;
+            font-size: 4rem;
+        }
+
+        .footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🏥 メディカルワンボ</h1>
+        <div class="subtitle">プラザホールディングス × ファストドクター</div>
+    </div>
+
+    <div class="content">
+        <a href="https://contact.fastdoctor.jp/online-consultation/?_gl=1*db8q6s*_gcl_au*MTU2MDQ0ODE4Ny4xNzcyNjg4MTQ0" class="action-button btn-primary">
+            <span class="icon">🩺</span> すぐにオンライン診療を申し込む (内科・小児科)
+        </a>
+
+        <a href="https://fastdoctor.jp/online-consultation/" class="action-button btn-secondary">
+            <span class="icon">ℹ️</span> 対応できる症状・待ち時間を確認する
+        </a>
+
+        <a href="https://whereby.com/medical-onebo-demo" target="_blank" class="action-button btn-family">
+            <span class="icon">👨‍👩‍👧‍👦</span> ご家族とビデオ通話でお話しする
+        </a>
+    </div>
+
+    <div class="footer">
+        <a href="https://fastdoctor.jp/" style="color: #aaa; text-decoration: none;">ファストドクター公式サイトへ</a> | ※本画面はプレゼン用のプロトタイプです
+    </div>
+</div>
+
+</body>
+</html>
