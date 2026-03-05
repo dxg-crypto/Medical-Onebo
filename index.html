@@ -63,7 +63,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 3vh;
+            gap: 3.5vh;
             padding: 3vh 4vw;
         }
 
@@ -73,7 +73,7 @@
             justify-content: center;
             width: 85%;
             max-width: 1200px;
-            padding: 3.5vh 2vw;
+            padding: 4vh 2vw;
             font-size: clamp(1.5rem, 3vw, 3rem);
             font-weight: bold;
             text-decoration: none;
@@ -108,7 +108,6 @@
             border-bottom: 5px solid #2E7D32;
         }
 
-        /* テンキーモーダルのレスポンシブ対応 */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -126,7 +125,7 @@
             border-radius: 16px;
             width: 80vw;
             max-width: 600px;
-            max-height: 90vh; /* タブレット横向きでも画面内に収める */
+            max-height: 90vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -212,8 +211,9 @@
 </div>
 
 <div class="content">
+    
     <a href="https://contact.fastdoctor.jp/online-consultation/?_gl=1*db8q6s*_gcl_au*MTU2MDQ0ODE4Ny4xNzcyNjg4MTQ0" class="action-button btn-primary">
-        すぐにオンライン診療を申し込む (内科・小児科)
+        すぐにオンライン診療を申し込む
     </a>
 
     <a href="https://fastdoctor.jp/online-consultation/" class="action-button btn-secondary">
@@ -280,7 +280,7 @@
 
     function connectCall() {
         if(currentPin.length > 0) {
-            alert("デモ動作: ルーム番号「" + currentPin + "」で接続します。\n\n※実際の運用では、Whereby等のブラウザ完結型Web会議ツールと連携し、アプリ不要で通話を開始します。");
+            alert("デモ動作: ルーム番号「" + currentPin + "」で接続します。\n\n※実運用フェーズ1ではWhereby等を使用し、フェーズ2ではAppSheet連携によるGoogle Meet自動接続を想定しています。");
             closeModal();
         } else {
             alert("ルーム番号を入力してください。");
