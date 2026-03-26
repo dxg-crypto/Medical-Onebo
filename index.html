@@ -3,105 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>メディカルOne-Bo - 発信画面</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>メディカルOne-Bo - 統合型アプリ</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
     <style>
-        /* 全画面リセットとiPhone用調整 */
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body { background-color: #f0f4f8; font-family: 'Noto Sans JP', sans-serif; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; overflow: hidden; }
         
-        body { 
-            background-color: #f0f4f8; 
-            font-family: 'Noto Sans JP', sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100dvh; /* iPhoneのバーを考慮した高さ */
-            width: 100vw;
-            overflow: hidden; 
-        }
-
-        .kiosk-container { 
-            background-color: #ffffff; 
-            border-radius: 20px; 
-            box-shadow: 0 15px 35px rgba(0, 86, 179, 0.1); 
-            width: 92%; 
-            max-width: 480px; 
-            max-height: 96dvh; /* 縦も画面内に収める */
-            padding: clamp(20px, 5vh, 40px) 25px; 
-            text-align: center; 
-            border-top: 8px solid #0056B3;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
+        /* メイン画面（常に表示されるテンキー） */
+        .kiosk-container { background-color: #ffffff; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 86, 179, 0.1); width: 92%; max-width: 480px; max-height: 96dvh; padding: clamp(20px, 5vh, 40px) 25px; text-align: center; border-top: 8px solid #0056B3; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 10;}
+        
         .header h1 { color: #0056B3; font-size: clamp(22px, 6vw, 30px); font-weight: 900; margin-bottom: 5px; }
-        .header p { color: #64748b; font-size: clamp(13px, 3.5vw, 15px); font-weight: 700; margin-bottom: 20px; }
+        .header p { color: #64748b; font-size: clamp(13px, 3.5vw, 15px); font-weight: 700; margin-bottom: 10px; }
+        
+        /* 自分の番号を表示するバッジ */
+        .my-number-badge { display: inline-block; background-color: #e2e8f0; color: #334155; font-size: 14px; font-weight: bold; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; }
 
-        .display { 
-            background-color: #e2e8f0; 
-            border-radius: 12px; 
-            height: clamp(60px, 10vh, 80px); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            margin-bottom: 20px; 
-            border: 2px inset #cbd5e1; 
-        }
+        .display { background-color: #e2e8f0; border-radius: 12px; height: clamp(60px, 10vh, 80px); display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px inset #cbd5e1; }
         .display span { font-size: clamp(32px, 10vw, 46px); font-weight: 900; letter-spacing: 10px; color: #1e293b; }
 
-        .keypad { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: clamp(8px, 1.5vh, 15px); 
-            margin-bottom: 20px; 
-        }
-        .key { 
-            background-color: #ffffff; 
-            border: 2px solid #cbd5e1; 
-            border-radius: 12px; 
-            font-size: clamp(24px, 4vh, 32px); 
-            font-weight: 700; 
-            color: #334155; 
-            padding: clamp(12px, 2.5vh, 22px) 0; 
-            cursor: pointer; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-            transition: all 0.1s;
-        }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 1.5vh, 15px); margin-bottom: 20px; }
+        .key { background-color: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; font-size: clamp(24px, 4vh, 32px); font-weight: 700; color: #334155; padding: clamp(12px, 2.5vh, 22px) 0; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.1s; }
         .key:active { transform: scale(0.95); background-color: #f1f5f9; }
         .key-clear { background-color: #f87171; color: white; border-color: #ef4444; font-size: 18px; }
-
-        .btn-call { 
-            background-color: #F07E32; 
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            font-size: clamp(20px, 5vw, 24px); 
-            font-weight: 900; 
-            padding: clamp(15px, 2.5vh, 20px); 
-            width: 100%; 
-            box-shadow: 0 8px 15px rgba(240, 126, 50, 0.3); 
-            cursor: pointer;
-        }
-        .btn-call:disabled { background-color: #cbd5e1; box-shadow: none; opacity: 0.6; cursor: not-allowed; }
-
+        
+        .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; }
+        .btn-call:disabled { background-color: #cbd5e1; opacity: 0.6; cursor: not-allowed; }
         #status-message { margin-top: 15px; font-size: 14px; font-weight: 700; height: 20px; }
+
+        /* 着信割り込み画面（ポップアップ） */
+        #incoming-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: rgba(0, 0, 0, 0.85); z-index: 100; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .incoming-box { background-color: #ef4444; color: white; border-radius: 20px; padding: 40px 30px; text-align: center; animation: flash 1s infinite alternate; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        @keyframes flash { from { background-color: #ef4444; transform: scale(1); } to { background-color: #b91c1c; transform: scale(1.02); } }
+        .btn-answer { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: 900; padding: 20px 0; width: 100%; margin-top: 30px; cursor: pointer; box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4); }
     </style>
 </head>
 <body>
 
-<div class="kiosk-container">
+<div class="kiosk-container" id="main-container">
     <div class="header">
         <h1>メディカルOne-Bo</h1>
-        <p>繋ぎたい相手の6桁の番号を押してください</p>
+        <p>繋ぎたい相手の番号を押してください</p>
+        <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
     </div>
+    
     <div class="display" id="pin-display"></div>
+    
     <div class="keypad">
         <button class="key" onclick="inputDigit(1)">1</button>
         <button class="key" onclick="inputDigit(2)">2</button>
@@ -116,12 +66,21 @@
         <button class="key" onclick="inputDigit(0)">0</button>
         <button class="key" style="visibility: hidden;"></button> 
     </div>
+    
     <button class="btn-call" id="call-button" onclick="makeCall()" disabled>発 信 📞</button>
     <div id="status-message"></div>
 </div>
 
+<div id="incoming-overlay">
+    <div class="incoming-box">
+        <h1 style="font-size: 40px; margin-bottom: 10px;">📞 着信中！</h1>
+        <p>発信者からの呼び出しです</p>
+        <button class="btn-answer" onclick="answerCall()">応答する</button>
+    </div>
+</div>
+
 <script>
-    // 1. Firebase設定（維持）
+    // 1. Firebase設定
     const firebaseConfig = {
         apiKey: "AIzaSyBRuOkJzU6Yu2x-Arg7NjqySmqCA1CD65s",
         authDomain: "plaza-crm.firebaseapp.com",
@@ -130,69 +89,117 @@
         messagingSenderId: "781455940982",
         appId: "1:781455940982:web:04c1816ec65cde91ea2e57"
     };
-    
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // 2. ロジック（維持）
     let currentPin = "";
-    const displayElement = document.getElementById("pin-display");
-    const callButton = document.getElementById("call-button");
-    const statusMessage = document.getElementById("status-message");
+    let myReceiverNumber = "";
+    let unsubscribe = null; // 監視用
+    let targetCallingNumber = ""; // 自分が発信した相手の番号
 
-    function inputDigit(digit) {
-        if (currentPin.length < 6) {
-            currentPin += digit;
-            updateDisplay();
+    // ------------------------------------------------------------------
+    // 起動時の設定（URLを読み取って、自分の番号があれば着信待機を開始）
+    // ------------------------------------------------------------------
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const receiverId = urlParams.get('id');
+
+        if (receiverId && receiverId.length === 6) {
+            // URLに ?id=111111 がある場合
+            myReceiverNumber = receiverId;
+            const badge = document.getElementById("my-number-display");
+            badge.style.display = "inline-block";
+            badge.innerText = `この端末の着信番号：${myReceiverNumber}`;
+            
+            // 裏側で自分宛ての着信を監視スタート
+            startListening(); 
         }
-    }
+    };
 
-    function clearDigit() {
-        if (currentPin.length > 0) {
-            currentPin = currentPin.slice(0, -1);
-            updateDisplay();
-        }
-    }
-
+    // --- テンキー入力制御 ---
+    function inputDigit(digit) { if (currentPin.length < 6) { currentPin += digit; updateDisplay(); } }
+    function clearDigit() { if (currentPin.length > 0) { currentPin = currentPin.slice(0, -1); updateDisplay(); } }
     function updateDisplay() {
-        displayElement.innerHTML = `<span>${currentPin}</span>`;
-        callButton.disabled = currentPin.length !== 6;
-        statusMessage.innerText = "";
+        document.getElementById("pin-display").innerHTML = `<span>${currentPin}</span>`;
+        document.getElementById("call-button").disabled = currentPin.length !== 6;
+        document.getElementById("status-message").innerText = "";
     }
 
+    // --- 発信処理（自分が誰かを呼び出す） ---
     function makeCall() {
         if (currentPin.length === 6) {
-            statusMessage.style.color = "#059669";
-            statusMessage.innerText = "通信中...";
-            callButton.disabled = true;
+            const msg = document.getElementById("status-message");
+            msg.style.color = "#059669";
+            msg.innerText = "相手を呼び出しています...";
+            document.getElementById("call-button").disabled = true;
 
-            db.collection("rooms").doc(currentPin).get().then((doc) => {
-                if (doc.exists) {
-                    const roomUrl = doc.data().url;
-                    document.body.innerHTML = `
-                        <iframe 
-                            src="${roomUrl}" 
-                            allow="camera; microphone; fullscreen; display-capture" 
-                            style="width: 100vw; height: 100dvh; border: none;">
-                        </iframe>
-                        <button onclick="location.reload()" style="position: absolute; top: 15px; right: 15px; padding: 10px 20px; font-size: 16px; font-weight: bold; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 1000;">
-                            終了
-                        </button>
-                    `;
-                } else {
-                    statusMessage.style.color = "#ef4444";
-                    statusMessage.innerText = "番号が登録されていません。";
-                    setTimeout(() => {
-                        currentPin = "";
-                        updateDisplay();
-                    }, 2000);
-                }
-            }).catch((error) => {
-                statusMessage.style.color = "#ef4444";
-                statusMessage.innerText = "エラーが発生しました。";
-                callButton.disabled = false;
+            targetCallingNumber = currentPin; // かけた相手の番号を記憶
+            const docRef = db.collection("rooms").doc(targetCallingNumber);
+            
+            // 相手のデータベースを「着信中(calling)」に書き換える
+            docRef.set({ status: "calling" }, { merge: true }).then(() => {
+                // 相手が「応答」するのを監視して待つ
+                unsubscribe = docRef.onSnapshot((doc) => {
+                    if (doc.exists && doc.data().status === "in_call") {
+                        openVideoRoom(doc.data().url, targetCallingNumber);
+                    }
+                });
+            }).catch(error => {
+                msg.style.color = "#ef4444";
+                msg.innerText = "番号が存在しません。";
+                setTimeout(() => { currentPin = ""; updateDisplay(); }, 2000);
             });
         }
+    }
+
+    // --- 着信待機処理（自分が呼ばれるのを待つ） ---
+    function startListening() {
+        const docRef = db.collection("rooms").doc(myReceiverNumber);
+        
+        // データベースを待機状態(idle)にリセット
+        docRef.set({ status: "idle" }, { merge: true });
+
+        // 変化を監視し続ける
+        unsubscribe = docRef.onSnapshot((doc) => {
+            if (doc.exists) {
+                const status = doc.data().status;
+                if (status === "calling") {
+                    // 発信された！画面全体を覆うポップアップを表示
+                    document.getElementById("incoming-overlay").style.display = "flex";
+                }
+            }
+        });
+    }
+
+    // --- 応答ボタンを押した時 ---
+    function answerCall() {
+        const docRef = db.collection("rooms").doc(myReceiverNumber);
+        // ステータスを「通話中(in_call)」に変更
+        docRef.set({ status: "in_call" }, { merge: true }).then(() => {
+            docRef.get().then((doc) => {
+                openVideoRoom(doc.data().url, myReceiverNumber);
+            });
+        });
+    }
+
+    // --- ビデオ通話画面を開く（発信者も着信者も共通） ---
+    function openVideoRoom(url, pinToReset) {
+        if(unsubscribe) unsubscribe(); // 監視をストップ
+        
+        document.body.innerHTML = `
+            <iframe src="${url}" allow="camera; microphone; fullscreen; display-capture" style="width: 100vw; height: 100dvh; border: none;"></iframe>
+            <button onclick="endCall('${pinToReset}')" style="position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                通話を終了する
+            </button>
+        `;
+    }
+
+    // --- 通話を終了して元の画面に戻す ---
+    function endCall(pinToReset) {
+        // データベースを待機状態(idle)に戻してからリロード
+        db.collection("rooms").doc(pinToReset).set({ status: "idle" }, { merge: true }).then(() => {
+            location.reload(); 
+        });
     }
 </script>
 
