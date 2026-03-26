@@ -113,7 +113,8 @@
             myReceiverNumber = receiverId;
             const badge = document.getElementById("my-number-display");
             badge.style.display = "inline-block";
-            badge.innerText = `この端末の着信待機番号：${myReceiverNumber}`;
+            // 【変更】表示テキストをシンプルにしました
+            badge.innerText = `この端末の番号：${myReceiverNumber}`;
             startListening(); 
         }
         updateDisplay();
@@ -245,14 +246,11 @@
         });
     }
 
-    // --- 大幅進化：通話中も相手の切断を監視して自動で切れる処理 ---
     function openVideoRoom(url, pinToWatch) {
         if(unsubscribe) unsubscribe(); 
         
-        // 監視用タイマー機能の追加（通話中専用）
         var docRef = db.collection("rooms").doc(pinToWatch);
         unsubscribe = docRef.onSnapshot(function(doc) {
-            // もし相手が切ってデータベースが「idle」に戻ったら、自分も強制的に画面をリロードして切断する
             if (doc.exists && doc.data().status === "idle") {
                 location.reload(); 
             }
@@ -267,10 +265,8 @@
     }
 
     function endCall(pinToReset) {
-        // ボタンを押した本人はデータベースをidleにするだけ。
-        // 画面の切断処理は上の onSnapshot 監視機能が「相手も自分も」自動でやってくれます！
         db.collection("rooms").doc(pinToReset).update({ status: "idle" }).catch(function() {
-            location.reload(); // エラー時の保険
+            location.reload(); 
         });
     }
 </script>
