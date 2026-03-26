@@ -13,13 +13,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body { background-color: #f0f4f8; font-family: 'Noto Sans JP', sans-serif; display: flex; justify-content: center; align-items: center; height: 100dvh; width: 100vw; overflow: hidden; }
         
-        /* メイン画面（常に表示されるテンキー） */
         .kiosk-container { background-color: #ffffff; border-radius: 20px; box-shadow: 0 15px 35px rgba(0, 86, 179, 0.1); width: 92%; max-width: 480px; max-height: 96dvh; padding: clamp(20px, 5vh, 40px) 25px; text-align: center; border-top: 8px solid #0056B3; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 10;}
         
         .header h1 { color: #0056B3; font-size: clamp(22px, 6vw, 30px); font-weight: 900; margin-bottom: 5px; }
         .header p { color: #64748b; font-size: clamp(13px, 3.5vw, 15px); font-weight: 700; margin-bottom: 10px; }
-        
-        /* 自分の番号を表示するバッジ */
         .my-number-badge { display: inline-block; background-color: #e2e8f0; color: #334155; font-size: 14px; font-weight: bold; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; }
 
         .display { background-color: #e2e8f0; border-radius: 12px; height: clamp(60px, 10vh, 80px); display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px inset #cbd5e1; }
@@ -29,16 +26,20 @@
         .key { background-color: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; font-size: clamp(24px, 4vh, 32px); font-weight: 700; color: #334155; padding: clamp(12px, 2.5vh, 22px) 0; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.1s; }
         .key:active { transform: scale(0.95); background-color: #f1f5f9; }
         .key-clear { background-color: #f87171; color: white; border-color: #ef4444; font-size: 18px; }
-        
         .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; }
         .btn-call:disabled { background-color: #cbd5e1; opacity: 0.6; cursor: not-allowed; }
-        #status-message { margin-top: 15px; font-size: 14px; font-weight: 700; height: 20px; }
 
         /* 着信割り込み画面（ポップアップ） */
         #incoming-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: rgba(0, 0, 0, 0.85); z-index: 100; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .incoming-box { background-color: #ef4444; color: white; border-radius: 20px; padding: 40px 30px; text-align: center; animation: flash 1s infinite alternate; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         @keyframes flash { from { background-color: #ef4444; transform: scale(1); } to { background-color: #b91c1c; transform: scale(1.02); } }
         .btn-answer { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: 900; padding: 20px 0; width: 100%; margin-top: 30px; cursor: pointer; box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4); }
+
+        /* 🆕 発信中画面（ポップアップ） */
+        #calling-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: rgba(255, 255, 255, 0.95); z-index: 90; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .spinner { border: 5px solid #e2e8f0; border-top: 5px solid #F07E32; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn-cancel { background-color: #94a3b8; color: white; border: none; border-radius: 12px; font-size: 20px; font-weight: 700; padding: 15px 40px; margin-top: 40px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -49,9 +50,7 @@
         <p>繋ぎたい相手の番号を押してください</p>
         <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
     </div>
-    
     <div class="display" id="pin-display"></div>
-    
     <div class="keypad">
         <button class="key" onclick="inputDigit(1)">1</button>
         <button class="key" onclick="inputDigit(2)">2</button>
@@ -66,9 +65,17 @@
         <button class="key" onclick="inputDigit(0)">0</button>
         <button class="key" style="visibility: hidden;"></button> 
     </div>
-    
     <button class="btn-call" id="call-button" onclick="makeCall()" disabled>発 信 📞</button>
-    <div id="status-message"></div>
+    <div id="status-message" style="margin-top: 15px; font-size: 14px; font-weight: 700; height: 20px;"></div>
+</div>
+
+<div id="calling-overlay">
+    <div style="text-align: center;">
+        <div class="spinner"></div>
+        <h1 style="font-size: 32px; color: #334155; margin-bottom: 10px;">発信中...</h1>
+        <p style="color: #64748b; font-size: 18px;" id="calling-number-text">相手の応答を待っています</p>
+        <button class="btn-cancel" onclick="cancelCall()">発信をキャンセル</button>
+    </div>
 </div>
 
 <div id="incoming-overlay">
@@ -80,7 +87,6 @@
 </div>
 
 <script>
-    // 1. Firebase設定
     const firebaseConfig = {
         apiKey: "AIzaSyBRuOkJzU6Yu2x-Arg7NjqySmqCA1CD65s",
         authDomain: "plaza-crm.firebaseapp.com",
@@ -94,29 +100,22 @@
 
     let currentPin = "";
     let myReceiverNumber = "";
-    let unsubscribe = null; // 監視用
-    let targetCallingNumber = ""; // 自分が発信した相手の番号
+    let unsubscribe = null; 
+    let targetCallingNumber = ""; 
 
-    // ------------------------------------------------------------------
-    // 起動時の設定（URLを読み取って、自分の番号があれば着信待機を開始）
-    // ------------------------------------------------------------------
     window.onload = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const receiverId = urlParams.get('id');
 
         if (receiverId && receiverId.length === 6) {
-            // URLに ?id=111111 がある場合
             myReceiverNumber = receiverId;
             const badge = document.getElementById("my-number-display");
             badge.style.display = "inline-block";
             badge.innerText = `この端末の着信番号：${myReceiverNumber}`;
-            
-            // 裏側で自分宛ての着信を監視スタート
             startListening(); 
         }
     };
 
-    // --- テンキー入力制御 ---
     function inputDigit(digit) { if (currentPin.length < 6) { currentPin += digit; updateDisplay(); } }
     function clearDigit() { if (currentPin.length > 0) { currentPin = currentPin.slice(0, -1); updateDisplay(); } }
     function updateDisplay() {
@@ -125,56 +124,66 @@
         document.getElementById("status-message").innerText = "";
     }
 
-    // --- 発信処理（自分が誰かを呼び出す） ---
+    // --- 🆕 発信処理（発信中画面を出す） ---
     function makeCall() {
         if (currentPin.length === 6) {
-            const msg = document.getElementById("status-message");
-            msg.style.color = "#059669";
-            msg.innerText = "相手を呼び出しています...";
-            document.getElementById("call-button").disabled = true;
-
-            targetCallingNumber = currentPin; // かけた相手の番号を記憶
-            const docRef = db.collection("rooms").doc(targetCallingNumber);
+            targetCallingNumber = currentPin; 
             
-            // 相手のデータベースを「着信中(calling)」に書き換える
+            // 発信中画面を表示
+            document.getElementById("calling-number-text").innerText = `${targetCallingNumber} を呼び出しています`;
+            document.getElementById("calling-overlay").style.display = "flex";
+
+            const docRef = db.collection("rooms").doc(targetCallingNumber);
             docRef.set({ status: "calling" }, { merge: true }).then(() => {
-                // 相手が「応答」するのを監視して待つ
                 unsubscribe = docRef.onSnapshot((doc) => {
                     if (doc.exists && doc.data().status === "in_call") {
                         openVideoRoom(doc.data().url, targetCallingNumber);
                     }
                 });
             }).catch(error => {
+                document.getElementById("calling-overlay").style.display = "none";
+                const msg = document.getElementById("status-message");
                 msg.style.color = "#ef4444";
-                msg.innerText = "番号が存在しません。";
+                msg.innerText = "番号が登録されていません。";
                 setTimeout(() => { currentPin = ""; updateDisplay(); }, 2000);
             });
         }
     }
 
-    // --- 着信待機処理（自分が呼ばれるのを待つ） ---
+    // --- 🆕 発信キャンセル処理 ---
+    function cancelCall() {
+        if(unsubscribe) unsubscribe();
+        const docRef = db.collection("rooms").doc(targetCallingNumber);
+        
+        // 相手の着信状態を取り消す（idleに戻す）
+        docRef.set({ status: "idle" }, { merge: true }).then(() => {
+            // 発信中画面を閉じてリセット
+            document.getElementById("calling-overlay").style.display = "none";
+            currentPin = "";
+            updateDisplay();
+        });
+    }
+
+    // --- 着信待機処理 ---
     function startListening() {
         const docRef = db.collection("rooms").doc(myReceiverNumber);
-        
-        // データベースを待機状態(idle)にリセット
         docRef.set({ status: "idle" }, { merge: true });
 
-        // 変化を監視し続ける
         unsubscribe = docRef.onSnapshot((doc) => {
             if (doc.exists) {
                 const status = doc.data().status;
                 if (status === "calling") {
-                    // 発信された！画面全体を覆うポップアップを表示
                     document.getElementById("incoming-overlay").style.display = "flex";
+                } else if (status === "idle") {
+                    // 🆕 発信者がキャンセルした場合は着信画面を引っ込める
+                    document.getElementById("incoming-overlay").style.display = "none";
                 }
             }
         });
     }
 
-    // --- 応答ボタンを押した時 ---
     function answerCall() {
         const docRef = db.collection("rooms").doc(myReceiverNumber);
-        // ステータスを「通話中(in_call)」に変更
         docRef.set({ status: "in_call" }, { merge: true }).then(() => {
             docRef.get().then((doc) => {
                 openVideoRoom(doc.data().url, myReceiverNumber);
@@ -182,9 +191,8 @@
         });
     }
 
-    // --- ビデオ通話画面を開く（発信者も着信者も共通） ---
     function openVideoRoom(url, pinToReset) {
-        if(unsubscribe) unsubscribe(); // 監視をストップ
+        if(unsubscribe) unsubscribe(); 
         
         document.body.innerHTML = `
             <iframe src="${url}" allow="camera; microphone; fullscreen; display-capture" style="width: 100vw; height: 100dvh; border: none;"></iframe>
@@ -194,9 +202,7 @@
         `;
     }
 
-    // --- 通話を終了して元の画面に戻す ---
     function endCall(pinToReset) {
-        // データベースを待機状態(idle)に戻してからリロード
         db.collection("rooms").doc(pinToReset).set({ status: "idle" }, { merge: true }).then(() => {
             location.reload(); 
         });
