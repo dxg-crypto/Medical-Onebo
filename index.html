@@ -141,12 +141,10 @@
 
     function updateDisplay() {
         document.getElementById("pin-display").innerHTML = `<span>${currentPin}</span>`;
-        // 発信ボタンの有効化（内部的には8文字）
         document.getElementById("call-button").disabled = currentPin.length !== 8;
         document.getElementById("status-message").innerText = "";
     }
 
-    // --- 絶対にフリーズさせない発信処理 ---
     function makeCall() {
         if (currentPin.length === 8) {
             targetCallingNumber = currentPin; 
@@ -156,9 +154,8 @@
             document.getElementById("call-button").disabled = true; 
 
             var docRef = db.collection("rooms").doc(targetCallingNumber);
-            var isHandled = false; // 処理が二重に行われないための鍵
+            var isHandled = false;
 
-            // 【保険】5秒経っても処理が終わらなければ、強制的にエラーにする
             var fallbackTimer = setTimeout(function() {
                 if (!isHandled) {
                     isHandled = true;
@@ -166,13 +163,13 @@
                 }
             }, 5000);
 
-            // データベースの確認（シンプルなPromise記法に変更）
             docRef.get().then(function(doc) {
-                if (isHandled) return; // 既にタイムアウト済みなら無視
+                if (isHandled) return; 
                 isHandled = true;
-                clearTimeout(fallbackTimer); // タイマー解除
+                clearTimeout(fallbackTimer); 
 
-                if (doc.exists) {
+                // 【ここが修正のキモ！】箱が存在し、かつ中に「url」が設定されている本物の番号だけを通す
+                if (doc.exists && doc.data().url) {
                     docRef.set({ status: "calling" }, { merge: true }).then(function() {
                         unsubscribe = docRef.onSnapshot(function(snapshot) {
                             if (snapshot.exists && snapshot.data().status === "in_call") {
@@ -181,6 +178,7 @@
                         });
                     });
                 } else {
+                    // urlが入っていない幽霊ボックスはエラーにして弾く！
                     handleCallError("おかけになった番号は使われておりません。");
                 }
             }).catch(function(error) {
@@ -208,18 +206,17 @@
 
     function cancelCall() {
         if(unsubscribe) unsubscribe();
-        var docRef = db.collection("rooms").doc(targetCallingNumber);
-        docRef.set({ status: "idle" }, { merge: true }).then(function() {
-            document.getElementById("calling-overlay").style.display = "none";
-            document.getElementById("call-button").disabled = false;
-            currentPin = "";
-            updateDisplay();
-        }).catch(function() {
-            document.getElementById("calling-overlay").style.display = "none";
-            document.getElementById("call-button").disabled = false;
-            currentPin = "";
-            updateDisplay();
-        });
+        
+        // 【サクサク化】キャンセル時は、Firebaseを待たずに「即座に」画面を閉じる
+        document.getElementById("calling-overlay").style.display = "none";
+        document.getElementById("call-button").disabled = false;
+        currentPin = "";
+        updateDisplay();
+
+        // 裏側でFirebaseのステータスを戻しておく
+        if(targetCallingNumber) {
+            db.collection("rooms").doc(targetCallingNumber).set({ status: "idle" }, { merge: true }).catch(function(){});
+        }
     }
 
     function startListening() {
