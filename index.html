@@ -146,45 +146,57 @@
         document.getElementById("status-message").innerText = "";
     }
 
-    function makeCall() {
+    // --- 強化版：タイムアウト付きの発信処理 ---
+    async function makeCall() {
         if (currentPin.length === 8) {
             targetCallingNumber = currentPin; 
             
             document.getElementById("calling-number-text").innerText = `${targetCallingNumber} を呼び出しています`;
             document.getElementById("calling-overlay").style.display = "flex";
+            document.getElementById("call-button").disabled = true; // 連打防止
 
             const docRef = db.collection("rooms").doc(targetCallingNumber);
-            
-            docRef.get().then((doc) => {
+
+            // 【保険】5秒経っても処理が終わらなければ、強制的にエラーにする
+            const fallbackTimer = setTimeout(() => {
+                handleCallError("通信がタイムアウトしました。");
+            }, 5000);
+
+            try {
+                // 確実に最新のサーバーデータを確認しにいく
+                const doc = await docRef.get({ source: 'server' });
+                
+                // 無事に確認できたら、5秒の時限爆弾（タイマー）を解除する
+                clearTimeout(fallbackTimer);
+
                 if (doc.exists) {
-                    docRef.set({ status: "calling" }, { merge: true }).then(() => {
-                        unsubscribe = docRef.onSnapshot((snapshot) => {
-                            if (snapshot.exists && snapshot.data().status === "in_call") {
-                                openVideoRoom(snapshot.data().url, targetCallingNumber);
-                            }
-                        });
+                    await docRef.set({ status: "calling" }, { merge: true });
+                    unsubscribe = docRef.onSnapshot((snapshot) => {
+                        if (snapshot.exists && snapshot.data().status === "in_call") {
+                            openVideoRoom(snapshot.data().url, targetCallingNumber);
+                        }
                     });
                 } else {
-                    handleCallError();
+                    handleCallError("おかけになった番号は使われておりません。");
                 }
-            }).catch(error => {
-                // ここが修正ポイント！エラーが発生した場合（データがない場合）も処理を続ける
-                handleCallError();
-            });
+            } catch (error) {
+                clearTimeout(fallbackTimer);
+                handleCallError("通信エラーが発生しました。");
+            }
         }
     }
 
-    // エラー時の処理をまとめた関数
-    function handleCallError() {
+    // エラー時の処理をまとめた関数（エラーメッセージを自由に変えられるようにしました）
+    function handleCallError(errorMessage) {
         document.getElementById("calling-overlay").style.display = "none";
         const msg = document.getElementById("status-message");
         msg.style.color = "#ef4444";
-        msg.innerText = "おかけになった番号は使われておりません。";
+        msg.innerText = errorMessage;
         
         setTimeout(() => { 
             currentPin = "";
             updateDisplay(); 
-        }, 2000);
+        }, 2500); // メッセージを長め（2.5秒）に表示
     }
 
     function cancelCall() {
@@ -195,7 +207,6 @@
             currentPin = "";
             updateDisplay();
         }).catch(() => {
-            // エラー時でも強制的に画面を戻す
             document.getElementById("calling-overlay").style.display = "none";
             currentPin = "";
             updateDisplay();
@@ -205,7 +216,6 @@
     function startListening() {
         const docRef = db.collection("rooms").doc(myReceiverNumber);
         
-        // エラー回避のため、自分の待機番号の箱がなければ自動作成する
         docRef.set({ status: "idle" }, { merge: true });
 
         unsubscribe = docRef.onSnapshot((doc) => {
