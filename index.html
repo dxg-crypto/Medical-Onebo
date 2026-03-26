@@ -48,7 +48,7 @@
     <div id="caller-ui">
         <div class="header">
             <h1>メディカルOne-Bo</h1>
-            <p>繋ぎたい相手の番号（8桁）を押してください</p>
+            <p>繋ぎたい相手の番号（7桁）を押してください</p>
             <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
         </div>
         <div class="display" id="pin-display"></div>
@@ -114,7 +114,6 @@
             const badge = document.getElementById("my-number-display");
             badge.style.display = "inline-block";
             badge.innerText = `この端末の着信待機番号：${myReceiverNumber}`;
-            
             startListening(); 
         }
         updateDisplay();
@@ -142,85 +141,94 @@
 
     function updateDisplay() {
         document.getElementById("pin-display").innerHTML = `<span>${currentPin}</span>`;
+        // 発信ボタンの有効化（内部的には8文字）
         document.getElementById("call-button").disabled = currentPin.length !== 8;
         document.getElementById("status-message").innerText = "";
     }
 
-    // --- 強化版：タイムアウト付きの発信処理 ---
-    async function makeCall() {
+    // --- 絶対にフリーズさせない発信処理 ---
+    function makeCall() {
         if (currentPin.length === 8) {
             targetCallingNumber = currentPin; 
             
-            document.getElementById("calling-number-text").innerText = `${targetCallingNumber} を呼び出しています`;
+            document.getElementById("calling-number-text").innerText = targetCallingNumber + " を呼び出しています";
             document.getElementById("calling-overlay").style.display = "flex";
-            document.getElementById("call-button").disabled = true; // 連打防止
+            document.getElementById("call-button").disabled = true; 
 
-            const docRef = db.collection("rooms").doc(targetCallingNumber);
+            var docRef = db.collection("rooms").doc(targetCallingNumber);
+            var isHandled = false; // 処理が二重に行われないための鍵
 
             // 【保険】5秒経っても処理が終わらなければ、強制的にエラーにする
-            const fallbackTimer = setTimeout(() => {
-                handleCallError("通信がタイムアウトしました。");
+            var fallbackTimer = setTimeout(function() {
+                if (!isHandled) {
+                    isHandled = true;
+                    handleCallError("通信がタイムアウトしました。");
+                }
             }, 5000);
 
-            try {
-                // 確実に最新のサーバーデータを確認しにいく
-                const doc = await docRef.get({ source: 'server' });
-                
-                // 無事に確認できたら、5秒の時限爆弾（タイマー）を解除する
-                clearTimeout(fallbackTimer);
+            // データベースの確認（シンプルなPromise記法に変更）
+            docRef.get().then(function(doc) {
+                if (isHandled) return; // 既にタイムアウト済みなら無視
+                isHandled = true;
+                clearTimeout(fallbackTimer); // タイマー解除
 
                 if (doc.exists) {
-                    await docRef.set({ status: "calling" }, { merge: true });
-                    unsubscribe = docRef.onSnapshot((snapshot) => {
-                        if (snapshot.exists && snapshot.data().status === "in_call") {
-                            openVideoRoom(snapshot.data().url, targetCallingNumber);
-                        }
+                    docRef.set({ status: "calling" }, { merge: true }).then(function() {
+                        unsubscribe = docRef.onSnapshot(function(snapshot) {
+                            if (snapshot.exists && snapshot.data().status === "in_call") {
+                                openVideoRoom(snapshot.data().url, targetCallingNumber);
+                            }
+                        });
                     });
                 } else {
                     handleCallError("おかけになった番号は使われておりません。");
                 }
-            } catch (error) {
+            }).catch(function(error) {
+                if (isHandled) return;
+                isHandled = true;
                 clearTimeout(fallbackTimer);
                 handleCallError("通信エラーが発生しました。");
-            }
+            });
         }
     }
 
-    // エラー時の処理をまとめた関数（エラーメッセージを自由に変えられるようにしました）
     function handleCallError(errorMessage) {
         document.getElementById("calling-overlay").style.display = "none";
-        const msg = document.getElementById("status-message");
+        document.getElementById("call-button").disabled = false;
+        
+        var msg = document.getElementById("status-message");
         msg.style.color = "#ef4444";
         msg.innerText = errorMessage;
         
-        setTimeout(() => { 
+        setTimeout(function() { 
             currentPin = "";
             updateDisplay(); 
-        }, 2500); // メッセージを長め（2.5秒）に表示
+        }, 2000); 
     }
 
     function cancelCall() {
         if(unsubscribe) unsubscribe();
-        const docRef = db.collection("rooms").doc(targetCallingNumber);
-        docRef.set({ status: "idle" }, { merge: true }).then(() => {
+        var docRef = db.collection("rooms").doc(targetCallingNumber);
+        docRef.set({ status: "idle" }, { merge: true }).then(function() {
             document.getElementById("calling-overlay").style.display = "none";
+            document.getElementById("call-button").disabled = false;
             currentPin = "";
             updateDisplay();
-        }).catch(() => {
+        }).catch(function() {
             document.getElementById("calling-overlay").style.display = "none";
+            document.getElementById("call-button").disabled = false;
             currentPin = "";
             updateDisplay();
         });
     }
 
     function startListening() {
-        const docRef = db.collection("rooms").doc(myReceiverNumber);
-        
+        var docRef = db.collection("rooms").doc(myReceiverNumber);
         docRef.set({ status: "idle" }, { merge: true });
 
-        unsubscribe = docRef.onSnapshot((doc) => {
+        unsubscribe = docRef.onSnapshot(function(doc) {
             if (doc.exists) {
-                const status = doc.data().status;
+                var status = doc.data().status;
                 if (status === "calling") {
                     document.getElementById("incoming-overlay").style.display = "flex";
                 } else if (status === "idle") {
@@ -231,9 +239,9 @@
     }
 
     function answerCall() {
-        const docRef = db.collection("rooms").doc(myReceiverNumber);
-        docRef.set({ status: "in_call" }, { merge: true }).then(() => {
-            docRef.get().then((doc) => {
+        var docRef = db.collection("rooms").doc(myReceiverNumber);
+        docRef.set({ status: "in_call" }, { merge: true }).then(function() {
+            docRef.get().then(function(doc) {
                 openVideoRoom(doc.data().url, myReceiverNumber);
             });
         });
@@ -251,7 +259,7 @@
     }
 
     function endCall(pinToReset) {
-        db.collection("rooms").doc(pinToReset).set({ status: "idle" }, { merge: true }).then(() => {
+        db.collection("rooms").doc(pinToReset).set({ status: "idle" }, { merge: true }).then(function() {
             location.reload(); 
         });
     }
