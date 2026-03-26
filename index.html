@@ -47,7 +47,7 @@
 </head>
 <body>
 
-<audio id="ringtone" src="https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg" loop></audio>
+<audio id="ringtone" src="https://www.soundjay.com/phone/sounds/telephone-ring-03a.mp3" loop preload="auto"></audio>
 
 <div class="kiosk-container" id="main-container">
     <div id="start-screen">
@@ -136,8 +136,11 @@
     };
 
     function activateReceiver() {
+        // 音声をミュートにして一度再生し、ブラウザに「再生許可」を強制的に認識させる対策
+        ringtone.muted = true;
         ringtone.play().then(() => {
             ringtone.pause();
+            ringtone.muted = false; // ミュートを解除して本番の着信に備える
             ringtone.currentTime = 0;
         }).catch(err => console.log("Audio play allowed on next interaction"));
 
