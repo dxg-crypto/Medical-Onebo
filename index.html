@@ -169,7 +169,6 @@
                 clearTimeout(fallbackTimer); 
 
                 if (doc.exists && doc.data().url) {
-                    // 【修正】新しく箱を作る設定(set)を廃止し、純粋な更新(update)のみに変更
                     docRef.update({ status: "calling" }).then(function() {
                         unsubscribe = docRef.onSnapshot(function(snapshot) {
                             if (snapshot.exists && snapshot.data().status === "in_call") {
@@ -199,7 +198,6 @@
         msg.style.color = "#ef4444";
         msg.innerText = errorMessage;
         
-        // 【修正】表示時間を 3000ミリ秒（3秒） に延長しました
         setTimeout(function() { 
             currentPin = "";
             updateDisplay(); 
@@ -215,7 +213,6 @@
         updateDisplay();
 
         if(targetCallingNumber) {
-            // 【修正】キャンセル時も update を使用
             db.collection("rooms").doc(targetCallingNumber).update({ status: "idle" }).catch(function(){});
         }
     }
@@ -223,7 +220,6 @@
     function startListening() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
         
-        // 【修正】待機開始時も、勝手に箱を作らないように update を使用
         docRef.update({ status: "idle" }).catch(function(error) {
             console.log("未登録の番号のため、待機状態にできませんでした。");
         });
@@ -242,7 +238,6 @@
 
     function answerCall() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
-        // 【修正】応答時も update を使用
         docRef.update({ status: "in_call" }).then(function() {
             docRef.get().then(function(doc) {
                 openVideoRoom(doc.data().url, myReceiverNumber);
@@ -250,21 +245,32 @@
         });
     }
 
-    function openVideoRoom(url, pinToReset) {
+    // --- 大幅進化：通話中も相手の切断を監視して自動で切れる処理 ---
+    function openVideoRoom(url, pinToWatch) {
         if(unsubscribe) unsubscribe(); 
+        
+        // 監視用タイマー機能の追加（通話中専用）
+        var docRef = db.collection("rooms").doc(pinToWatch);
+        unsubscribe = docRef.onSnapshot(function(doc) {
+            // もし相手が切ってデータベースが「idle」に戻ったら、自分も強制的に画面をリロードして切断する
+            if (doc.exists && doc.data().status === "idle") {
+                location.reload(); 
+            }
+        });
         
         document.body.innerHTML = `
             <iframe src="${url}" allow="camera; microphone; fullscreen; display-capture" style="width: 100vw; height: 100dvh; border: none;"></iframe>
-            <button onclick="endCall('${pinToReset}')" style="position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+            <button onclick="endCall('${pinToWatch}')" style="position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
                 通話を終了する
             </button>
         `;
     }
 
     function endCall(pinToReset) {
-        // 【修正】終了時も update を使用
-        db.collection("rooms").doc(pinToReset).update({ status: "idle" }).then(function() {
-            location.reload(); 
+        // ボタンを押した本人はデータベースをidleにするだけ。
+        // 画面の切断処理は上の onSnapshot 監視機能が「相手も自分も」自動でやってくれます！
+        db.collection("rooms").doc(pinToReset).update({ status: "idle" }).catch(function() {
+            location.reload(); // エラー時の保険
         });
     }
 </script>
