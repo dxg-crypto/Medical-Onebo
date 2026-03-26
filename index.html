@@ -48,7 +48,7 @@
     <div id="caller-ui">
         <div class="header">
             <h1>メディカルOne-Bo</h1>
-            <p>繋ぎたい相手の番号（7桁）を押してください</p>
+            <p>繋ぎたい相手の番号（8桁）を押してください</p>
             <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
         </div>
         <div class="display" id="pin-display"></div>
@@ -110,13 +110,12 @@
         const receiverId = urlParams.get('id');       
 
         if (receiverId && receiverId.length === 8) {
-            // 【着信機モード】
             myReceiverNumber = receiverId;
             const badge = document.getElementById("my-number-display");
             badge.style.display = "inline-block";
             badge.innerText = `この端末の着信待機番号：${myReceiverNumber}`;
             
-            startListening(); // 自動待機開始
+            startListening(); 
         }
         updateDisplay();
     };
@@ -147,21 +146,17 @@
         document.getElementById("status-message").innerText = "";
     }
 
-    // --- 修正：発信前に番号が存在するかチェックする処理 ---
     function makeCall() {
         if (currentPin.length === 8) {
             targetCallingNumber = currentPin; 
             
-            // 一旦「発信中」画面を出す
             document.getElementById("calling-number-text").innerText = `${targetCallingNumber} を呼び出しています`;
             document.getElementById("calling-overlay").style.display = "flex";
 
             const docRef = db.collection("rooms").doc(targetCallingNumber);
             
-            // 1. まずデータベースにその番号（ドキュメント）が存在するか確認する
             docRef.get().then((doc) => {
                 if (doc.exists) {
-                    // 2-A. 存在する場合：相手を着信中(calling)にして、応答を待つ
                     docRef.set({ status: "calling" }, { merge: true }).then(() => {
                         unsubscribe = docRef.onSnapshot((snapshot) => {
                             if (snapshot.exists && snapshot.data().status === "in_call") {
@@ -170,23 +165,26 @@
                         });
                     });
                 } else {
-                    // 2-B. 存在しない場合：エラーにして発信中画面を閉じる
-                    document.getElementById("calling-overlay").style.display = "none";
-                    const msg = document.getElementById("status-message");
-                    msg.style.color = "#ef4444";
-                    // ユーザーに分かりやすいメッセージを表示
-                    msg.innerText = "おかけになった番号は使われておりません。";
-                    
-                    // 2秒後にメッセージと入力内容をリセット
-                    setTimeout(() => { 
-                        currentPin = "";
-                        updateDisplay(); 
-                    }, 2000);
+                    handleCallError();
                 }
             }).catch(error => {
-                console.error("エラーが発生しました:", error);
+                // ここが修正ポイント！エラーが発生した場合（データがない場合）も処理を続ける
+                handleCallError();
             });
         }
+    }
+
+    // エラー時の処理をまとめた関数
+    function handleCallError() {
+        document.getElementById("calling-overlay").style.display = "none";
+        const msg = document.getElementById("status-message");
+        msg.style.color = "#ef4444";
+        msg.innerText = "おかけになった番号は使われておりません。";
+        
+        setTimeout(() => { 
+            currentPin = "";
+            updateDisplay(); 
+        }, 2000);
     }
 
     function cancelCall() {
@@ -196,11 +194,18 @@
             document.getElementById("calling-overlay").style.display = "none";
             currentPin = "";
             updateDisplay();
+        }).catch(() => {
+            // エラー時でも強制的に画面を戻す
+            document.getElementById("calling-overlay").style.display = "none";
+            currentPin = "";
+            updateDisplay();
         });
     }
 
     function startListening() {
         const docRef = db.collection("rooms").doc(myReceiverNumber);
+        
+        // エラー回避のため、自分の待機番号の箱がなければ自動作成する
         docRef.set({ status: "idle" }, { merge: true });
 
         unsubscribe = docRef.onSnapshot((doc) => {
