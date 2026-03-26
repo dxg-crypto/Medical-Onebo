@@ -168,17 +168,18 @@
                 isHandled = true;
                 clearTimeout(fallbackTimer); 
 
-                // 【ここが修正のキモ！】箱が存在し、かつ中に「url」が設定されている本物の番号だけを通す
                 if (doc.exists && doc.data().url) {
-                    docRef.set({ status: "calling" }, { merge: true }).then(function() {
+                    // 【修正】新しく箱を作る設定(set)を廃止し、純粋な更新(update)のみに変更
+                    docRef.update({ status: "calling" }).then(function() {
                         unsubscribe = docRef.onSnapshot(function(snapshot) {
                             if (snapshot.exists && snapshot.data().status === "in_call") {
                                 openVideoRoom(snapshot.data().url, targetCallingNumber);
                             }
                         });
+                    }).catch(function() {
+                        handleCallError("発信に失敗しました。");
                     });
                 } else {
-                    // urlが入っていない幽霊ボックスはエラーにして弾く！
                     handleCallError("おかけになった番号は使われておりません。");
                 }
             }).catch(function(error) {
@@ -198,30 +199,34 @@
         msg.style.color = "#ef4444";
         msg.innerText = errorMessage;
         
+        // 【修正】表示時間を 3000ミリ秒（3秒） に延長しました
         setTimeout(function() { 
             currentPin = "";
             updateDisplay(); 
-        }, 2000); 
+        }, 3000); 
     }
 
     function cancelCall() {
         if(unsubscribe) unsubscribe();
         
-        // 【サクサク化】キャンセル時は、Firebaseを待たずに「即座に」画面を閉じる
         document.getElementById("calling-overlay").style.display = "none";
         document.getElementById("call-button").disabled = false;
         currentPin = "";
         updateDisplay();
 
-        // 裏側でFirebaseのステータスを戻しておく
         if(targetCallingNumber) {
-            db.collection("rooms").doc(targetCallingNumber).set({ status: "idle" }, { merge: true }).catch(function(){});
+            // 【修正】キャンセル時も update を使用
+            db.collection("rooms").doc(targetCallingNumber).update({ status: "idle" }).catch(function(){});
         }
     }
 
     function startListening() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
-        docRef.set({ status: "idle" }, { merge: true });
+        
+        // 【修正】待機開始時も、勝手に箱を作らないように update を使用
+        docRef.update({ status: "idle" }).catch(function(error) {
+            console.log("未登録の番号のため、待機状態にできませんでした。");
+        });
 
         unsubscribe = docRef.onSnapshot(function(doc) {
             if (doc.exists) {
@@ -237,7 +242,8 @@
 
     function answerCall() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
-        docRef.set({ status: "in_call" }, { merge: true }).then(function() {
+        // 【修正】応答時も update を使用
+        docRef.update({ status: "in_call" }).then(function() {
             docRef.get().then(function(doc) {
                 openVideoRoom(doc.data().url, myReceiverNumber);
             });
@@ -256,7 +262,8 @@
     }
 
     function endCall(pinToReset) {
-        db.collection("rooms").doc(pinToReset).set({ status: "idle" }, { merge: true }).then(function() {
+        // 【修正】終了時も update を使用
+        db.collection("rooms").doc(pinToReset).update({ status: "idle" }).then(function() {
             location.reload(); 
         });
     }
