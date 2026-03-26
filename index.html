@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>メディカルOne-Bo - IoT連携スマート版</title>
+    <title>メディカルOne-Bo - シンプル統一版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -110,7 +110,7 @@
         const receiverId = urlParams.get('id');       
 
         if (receiverId && receiverId.length === 8) {
-            // 【着信機モード】: 音声許可が不要になったので、開いた瞬間にいきなり監視スタート！
+            // 【着信機モード】
             myReceiverNumber = receiverId;
             const badge = document.getElementById("my-number-display");
             badge.style.display = "inline-block";
@@ -147,28 +147,44 @@
         document.getElementById("status-message").innerText = "";
     }
 
+    // --- 修正：発信前に番号が存在するかチェックする処理 ---
     function makeCall() {
         if (currentPin.length === 8) {
             targetCallingNumber = currentPin; 
+            
+            // 一旦「発信中」画面を出す
             document.getElementById("calling-number-text").innerText = `${targetCallingNumber} を呼び出しています`;
             document.getElementById("calling-overlay").style.display = "flex";
 
             const docRef = db.collection("rooms").doc(targetCallingNumber);
-            docRef.set({ status: "calling" }, { merge: true }).then(() => {
-                unsubscribe = docRef.onSnapshot((doc) => {
-                    if (doc.exists && doc.data().status === "in_call") {
-                        openVideoRoom(doc.data().url, targetCallingNumber);
-                    }
-                });
+            
+            // 1. まずデータベースにその番号（ドキュメント）が存在するか確認する
+            docRef.get().then((doc) => {
+                if (doc.exists) {
+                    // 2-A. 存在する場合：相手を着信中(calling)にして、応答を待つ
+                    docRef.set({ status: "calling" }, { merge: true }).then(() => {
+                        unsubscribe = docRef.onSnapshot((snapshot) => {
+                            if (snapshot.exists && snapshot.data().status === "in_call") {
+                                openVideoRoom(snapshot.data().url, targetCallingNumber);
+                            }
+                        });
+                    });
+                } else {
+                    // 2-B. 存在しない場合：エラーにして発信中画面を閉じる
+                    document.getElementById("calling-overlay").style.display = "none";
+                    const msg = document.getElementById("status-message");
+                    msg.style.color = "#ef4444";
+                    // ユーザーに分かりやすいメッセージを表示
+                    msg.innerText = "おかけになった番号は使われておりません。";
+                    
+                    // 2秒後にメッセージと入力内容をリセット
+                    setTimeout(() => { 
+                        currentPin = "";
+                        updateDisplay(); 
+                    }, 2000);
+                }
             }).catch(error => {
-                document.getElementById("calling-overlay").style.display = "none";
-                const msg = document.getElementById("status-message");
-                msg.style.color = "#ef4444";
-                msg.innerText = "番号が登録されていません。";
-                setTimeout(() => { 
-                    currentPin = "";
-                    updateDisplay(); 
-                }, 2000);
+                console.error("エラーが発生しました:", error);
             });
         }
     }
@@ -191,7 +207,6 @@
             if (doc.exists) {
                 const status = doc.data().status;
                 if (status === "calling") {
-                    // ブラウザの音は鳴らさず、画面を赤くするだけ
                     document.getElementById("incoming-overlay").style.display = "flex";
                 } else if (status === "idle") {
                     document.getElementById("incoming-overlay").style.display = "none";
