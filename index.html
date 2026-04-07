@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>メディカルOne-Bo - 原因究明テスト版</title>
+    <title>メディカルOne-Bo - エンタープライズ版</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -19,34 +19,91 @@
         .header h1 { color: #0056B3; font-size: clamp(22px, 6vw, 30px); font-weight: 900; margin-bottom: 5px; }
         .header p { color: #64748b; font-size: clamp(13px, 3.5vw, 15px); font-weight: 700; margin-bottom: 10px; }
         
-        .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; margin-bottom: 10px; }
-        .btn-register { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 900; padding: 15px; width: 100%; cursor: pointer; }
+        .my-number-badge { display: inline-block; background-color: #e2e8f0; color: #0056B3; font-size: 14px; font-weight: bold; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #cbd5e1; }
+
+        .display { background-color: #e2e8f0; border-radius: 12px; height: clamp(60px, 10vh, 80px); display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px inset #cbd5e1; }
+        .display span { font-size: clamp(32px, 9vw, 42px); font-weight: 900; letter-spacing: 5px; color: #1e293b; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 1.5vh, 15px); margin-bottom: 20px; }
+        .key { background-color: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; font-size: clamp(24px, 4vh, 32px); font-weight: 700; color: #334155; padding: clamp(12px, 2.5vh, 22px) 0; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.1s; }
+        .key:active { transform: scale(0.95); background-color: #f1f5f9; }
+        .key-clear { background-color: #f87171; color: white; border-color: #ef4444; font-size: 18px; }
+        
+        .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; }
+        .btn-call:disabled { background-color: #cbd5e1; opacity: 0.6; cursor: not-allowed; }
+
+        #calling-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: rgba(255, 255, 255, 0.95); z-index: 90; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .spinner { border: 5px solid #e2e8f0; border-top: 5px solid #F07E32; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn-cancel { background-color: #94a3b8; color: white; border: none; border-radius: 12px; font-size: 20px; font-weight: 700; padding: 15px 40px; margin-top: 40px; cursor: pointer; }
+
+        #incoming-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: rgba(0, 0, 0, 0.85); z-index: 100; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .incoming-box { background-color: #ef4444; color: white; border-radius: 20px; padding: 40px 30px; text-align: center; animation: flash 1s infinite alternate; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        @keyframes flash { from { background-color: #ef4444; transform: scale(1); } to { background-color: #b91c1c; transform: scale(1.02); } }
+        .btn-answer { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: 900; padding: 20px 0; width: 100%; margin-top: 30px; cursor: pointer; box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4); }
 
         /* ログイン画面のスタイル */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: #f0f4f8; z-index: 200; flex-direction: column; justify-content: center; align-items: center; }
-        .login-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 18px; text-align: center; box-sizing: border-box; }
+        .login-input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 18px; text-align: center; box-sizing: border-box; }
+        .login-input:focus { outline: none; border-color: #0056B3; }
     </style>
 </head>
 <body>
 
 <div id="login-overlay">
-    <div class="kiosk-container" style="padding: 40px 30px; max-height: none; border-top: 8px solid #ef4444;">
+    <div class="kiosk-container" style="padding: 40px 30px; max-height: none;">
         <div class="header">
-            <h1 style="font-size: 28px; color: #ef4444;">【テスト】直接登録・ログイン</h1>
+            <h1 style="font-size: 28px;">担当医ログイン</h1>
+            <p>スタッフ番号と暗証番号を入力してください</p>
         </div>
-        <input type="text" id="test-email" class="login-input" placeholder="メールアドレス全体 (例: b@b.com)">
-        <input type="text" id="test-password" class="login-input" placeholder="パスワード全体 (例: bbbbbb)">
-        
-        <button class="btn-call" style="background-color: #ef4444;" onclick="attemptLogin()">① ログインしてみる</button>
-        <button class="btn-register" onclick="attemptRegister()">② システム側から強制登録する</button>
-        
+        <input type="text" id="staff-id" class="login-input" placeholder="スタッフ番号 (例: 001)">
+        <input type="password" id="staff-pin" class="login-input" placeholder="暗証番号 (4桁)" inputmode="numeric" maxlength="4">
+        <button class="btn-call" style="background-color: #0056B3;" onclick="attemptLogin()">ログイン</button>
         <div id="login-error" style="color: #ef4444; margin-top: 15px; font-weight: bold; font-size: 14px; min-height: 20px;"></div>
     </div>
 </div>
 
 <div class="kiosk-container" id="main-container">
     <div id="caller-ui">
-        <div class="header"><h1>メディカルOne-Bo</h1></div>
+        <div class="header">
+            <h1>メディカルOne-Bo</h1>
+            <p>繋ぎたい相手の番号（7桁）を押してください</p>
+            <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
+        </div>
+        <div class="display" id="pin-display"></div>
+        <div class="keypad">
+            <button class="key" onclick="inputDigit(1)">1</button>
+            <button class="key" onclick="inputDigit(2)">2</button>
+            <button class="key" onclick="inputDigit(3)">3</button>
+            <button class="key" onclick="inputDigit(4)">4</button>
+            <button class="key" onclick="inputDigit(5)">5</button>
+            <button class="key" onclick="inputDigit(6)">6</button>
+            <button class="key" onclick="inputDigit(7)">7</button>
+            <button class="key" onclick="inputDigit(8)">8</button>
+            <button class="key" onclick="inputDigit(9)">9</button>
+            <button class="key key-clear" onclick="clearDigit()">訂正</button>
+            <button class="key" onclick="inputDigit(0)">0</button>
+            <button class="key" style="visibility: hidden;"></button> 
+        </div>
+        <button class="btn-call" id="call-button" onclick="makeCall()" disabled>発 信 📞</button>
+        <div id="status-message" style="margin-top: 15px; font-size: 14px; font-weight: 700; height: 20px;"></div>
+    </div>
+</div>
+
+<div id="calling-overlay">
+    <div style="text-align: center;">
+        <div class="spinner"></div>
+        <h1 style="font-size: 32px; color: #334155; margin-bottom: 10px;">発信中...</h1>
+        <p style="color: #64748b; font-size: 18px;" id="calling-number-text"></p>
+        <button class="btn-cancel" onclick="cancelCall()">発信をキャンセル</button>
+    </div>
+</div>
+
+<div id="incoming-overlay">
+    <div class="incoming-box">
+        <h1 style="font-size: 40px; margin-bottom: 10px;">📞 着信中！</h1>
+        <p>発信者からの呼び出しです</p>
+        <button class="btn-answer" onclick="answerCall()">応答する</button>
     </div>
 </div>
 
@@ -63,48 +120,232 @@
     const db = firebase.firestore();
     const auth = firebase.auth(); 
 
+    let currentPin = "";
+    let myReceiverNumber = "";
+    let unsubscribe = null; 
+    let targetCallingNumber = ""; 
+    let currentStaffId = ""; 
+
     window.onload = () => {
-        document.getElementById("login-overlay").style.display = "flex";
+        const urlParams = new URLSearchParams(window.location.search);
+        const receiverId = urlParams.get('id');       
+
+        if (receiverId && receiverId.length === 8) {
+            myReceiverNumber = receiverId;
+            const badge = document.getElementById("my-number-display");
+            badge.style.display = "inline-block";
+            badge.innerText = `この端末の番号：${myReceiverNumber}`;
+            
+            document.getElementById("login-overlay").style.display = "flex";
+        }
+        updateDisplay();
     };
 
-    // --- ① ログインテスト ---
-    function attemptLogin() {
-        const email = document.getElementById("test-email").value.trim();
-        const password = document.getElementById("test-password").value.trim();
+    function toHalfWidth(str) {
+        return str.replace(/[０-９]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        });
+    }
 
-        if(!email || !password) return;
-        document.getElementById("login-error").innerText = `送信中...`;
+    // --- ログイン処理（現場用・エラーメッセージ修正版） ---
+    function attemptLogin() {
+        let rawStaffId = document.getElementById("staff-id").value.trim();
+        let rawPin = document.getElementById("staff-pin").value.trim();
+
+        let staffId = toHalfWidth(rawStaffId);
+        const pin = toHalfWidth(rawPin);
+
+        // 現場スタッフが「1」と打っても、自動で「001」に変換する魔法
+        if (staffId.length > 0) {
+            staffId = staffId.padStart(3, '0');
+        }
+
+        if(!staffId || pin.length !== 4) {
+            document.getElementById("login-error").innerText = "スタッフ番号と4桁の暗証番号を入力してください";
+            return;
+        }
+
+        document.getElementById("login-error").style.color = "#64748b";
+        document.getElementById("login-error").innerText = "認証中...";
+
+        const email = staffId + "@onebo.local";
+        const password = pin + "56"; // 現場の4桁＋裏側の2桁＝6桁で認証
 
         auth.signInWithEmailAndPassword(email, password)
-            .then(() => {
-                alert("🎉 ログイン成功！");
+            .then((userCredential) => {
+                currentStaffId = staffId;
                 document.getElementById("login-overlay").style.display = "none";
+                writeAuditLog("LOGIN"); 
+                startListening();       
             })
             .catch((error) => {
+                // 本番用なので、生のエラーコードは見せずに分かりやすいメッセージにします
                 document.getElementById("login-error").style.color = "#ef4444";
-                document.getElementById("login-error").innerText = `エラー: ${error.code}`;
+                document.getElementById("login-error").innerText = "スタッフ番号か暗証番号が間違っています。";
             });
     }
 
-    // --- ② 強制登録テスト（★今回の主役） ---
-    function attemptRegister() {
-        const email = document.getElementById("test-email").value.trim();
-        const password = document.getElementById("test-password").value.trim();
+    // --- 監査ログ記録処理（ガイドライン遵守の要） ---
+    function writeAuditLog(actionType) {
+        db.collection("audit_logs").add({
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            action: actionType,
+            staffId: currentStaffId,
+            terminalId: myReceiverNumber
+        }).catch((err) => console.error("ログ保存エラー", err));
+    }
 
-        if(!email || !password) return;
-        document.getElementById("login-error").style.color = "#10b981";
-        document.getElementById("login-error").innerText = `Firebaseに強制登録中...`;
+    function inputDigit(digit) { 
+        if (currentPin.length < 8) { 
+            currentPin += digit; 
+            if (currentPin.length === 3) {
+                currentPin += "-";
+            }
+            updateDisplay(); 
+        } 
+    }
 
-        auth.createUserWithEmailAndPassword(email, password)
-            .then(() => {
-                alert("🎉 大成功！Firebaseへのユーザー作成とログインが同時に完了しました！\n（Firebaseの画面を開かなくても、プログラムから完璧に繋がっています）");
-                document.getElementById("login-overlay").style.display = "none";
-            })
-            .catch((error) => {
-                document.getElementById("login-error").style.color = "#ef4444";
-                document.getElementById("login-error").innerText = `登録エラー: ${error.code}\n※この英語メッセージを教えてください！`;
+    function clearDigit() { 
+        if (currentPin.length > 0) {
+            currentPin = currentPin.slice(0, -1);
+            if (currentPin.endsWith("-")) {
+                currentPin = currentPin.slice(0, -1);
+            }
+        }
+        updateDisplay(); 
+    }
+
+    function updateDisplay() {
+        document.getElementById("pin-display").innerHTML = `<span>${currentPin}</span>`;
+        document.getElementById("call-button").disabled = currentPin.length !== 8;
+        document.getElementById("status-message").innerText = "";
+    }
+
+    function makeCall() {
+        if (currentPin.length === 8) {
+            targetCallingNumber = currentPin; 
+            
+            document.getElementById("calling-number-text").innerText = targetCallingNumber + " を呼び出しています";
+            document.getElementById("calling-overlay").style.display = "flex";
+            document.getElementById("call-button").disabled = true; 
+
+            var docRef = db.collection("rooms").doc(targetCallingNumber);
+            var isHandled = false;
+
+            var fallbackTimer = setTimeout(function() {
+                if (!isHandled) {
+                    isHandled = true;
+                    handleCallError("通信がタイムアウトしました。");
+                }
+            }, 5000);
+
+            docRef.get().then(function(doc) {
+                if (isHandled) return; 
+                isHandled = true;
+                clearTimeout(fallbackTimer); 
+
+                if (doc.exists && doc.data().url) {
+                    docRef.update({ status: "calling" }).then(function() {
+                        unsubscribe = docRef.onSnapshot(function(snapshot) {
+                            if (snapshot.exists && snapshot.data().status === "in_call") {
+                                openVideoRoom(snapshot.data().url, targetCallingNumber);
+                            }
+                        });
+                    }).catch(function() {
+                        handleCallError("発信に失敗しました。");
+                    });
+                } else {
+                    handleCallError("おかけになった番号は使われておりません。");
+                }
+            }).catch(function(error) {
+                if (isHandled) return;
+                isHandled = true;
+                clearTimeout(fallbackTimer);
+                handleCallError("通信エラーが発生しました。");
             });
+        }
+    }
+
+    function handleCallError(errorMessage) {
+        document.getElementById("calling-overlay").style.display = "none";
+        document.getElementById("call-button").disabled = false;
+        
+        var msg = document.getElementById("status-message");
+        msg.style.color = "#ef4444";
+        msg.innerText = errorMessage;
+        
+        setTimeout(function() { 
+            currentPin = "";
+            updateDisplay(); 
+        }, 3000); 
+    }
+
+    function cancelCall() {
+        if(unsubscribe) unsubscribe();
+        
+        document.getElementById("calling-overlay").style.display = "none";
+        document.getElementById("call-button").disabled = false;
+        currentPin = "";
+        updateDisplay();
+
+        if(targetCallingNumber) {
+            db.collection("rooms").doc(targetCallingNumber).update({ status: "idle" }).catch(function(){});
+        }
+    }
+
+    function startListening() {
+        var docRef = db.collection("rooms").doc(myReceiverNumber);
+        
+        docRef.update({ status: "idle" }).catch(function(error) {
+            console.log("未登録の番号のため、待機状態にできませんでした。");
+        });
+
+        unsubscribe = docRef.onSnapshot(function(doc) {
+            if (doc.exists) {
+                var status = doc.data().status;
+                if (status === "calling") {
+                    document.getElementById("incoming-overlay").style.display = "flex";
+                } else if (status === "idle") {
+                    document.getElementById("incoming-overlay").style.display = "none";
+                }
+            }
+        });
+    }
+
+    function answerCall() {
+        var docRef = db.collection("rooms").doc(myReceiverNumber);
+        docRef.update({ status: "in_call" }).then(function() {
+            writeAuditLog("ANSWER_CALL"); // 応答ログも記録！
+            docRef.get().then(function(doc) {
+                openVideoRoom(doc.data().url, myReceiverNumber);
+            });
+        });
+    }
+
+    function openVideoRoom(url, pinToWatch) {
+        if(unsubscribe) unsubscribe(); 
+        
+        var docRef = db.collection("rooms").doc(pinToWatch);
+        unsubscribe = docRef.onSnapshot(function(doc) {
+            if (doc.exists && doc.data().status === "idle") {
+                location.reload(); 
+            }
+        });
+        
+        document.body.innerHTML = `
+            <iframe src="${url}" allow="camera; microphone; fullscreen; display-capture" style="width: 100vw; height: 100dvh; border: none;"></iframe>
+            <button onclick="endCall('${pinToWatch}')" style="position: absolute; top: 15px; right: 15px; padding: 12px 24px; font-size: 16px; font-weight: bold; background-color: #ef4444; color: white; border: none; border-radius: 8px; cursor: pointer; z-index: 1000; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                通話を終了する
+            </button>
+        `;
+    }
+
+    function endCall(pinToReset) {
+        db.collection("rooms").doc(pinToReset).update({ status: "idle" }).catch(function() {
+            location.reload(); 
+        });
     }
 </script>
+
 </body>
 </html>
