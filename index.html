@@ -19,23 +19,12 @@
         .header h1 { color: #0056B3; font-size: clamp(22px, 6vw, 30px); font-weight: 900; margin-bottom: 5px; }
         .header p { color: #64748b; font-size: clamp(13px, 3.5vw, 15px); font-weight: 700; margin-bottom: 10px; }
         
-        .my-number-badge { display: inline-block; background-color: #e2e8f0; color: #0056B3; font-size: 14px; font-weight: bold; padding: 5px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #cbd5e1; }
-
-        .display { background-color: #e2e8f0; border-radius: 12px; height: clamp(60px, 10vh, 80px); display: flex; justify-content: center; align-items: center; margin-bottom: 20px; border: 2px inset #cbd5e1; }
-        .display span { font-size: clamp(32px, 9vw, 42px); font-weight: 900; letter-spacing: 5px; color: #1e293b; }
-
-        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 1.5vh, 15px); margin-bottom: 20px; }
-        .key { background-color: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; font-size: clamp(24px, 4vh, 32px); font-weight: 700; color: #334155; padding: clamp(12px, 2.5vh, 22px) 0; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: all 0.1s; }
-        .key:active { transform: scale(0.95); background-color: #f1f5f9; }
-        .key-clear { background-color: #f87171; color: white; border-color: #ef4444; font-size: 18px; }
-        
-        .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; }
-        .btn-call:disabled { background-color: #cbd5e1; opacity: 0.6; cursor: not-allowed; }
+        .btn-call { background-color: #F07E32; color: white; border: none; border-radius: 12px; font-size: clamp(20px, 5vw, 24px); font-weight: 900; padding: clamp(15px, 2.5vh, 20px); width: 100%; cursor: pointer; margin-bottom: 10px; }
+        .btn-register { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: 900; padding: 15px; width: 100%; cursor: pointer; }
 
         /* ログイン画面のスタイル */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: #f0f4f8; z-index: 200; flex-direction: column; justify-content: center; align-items: center; }
-        .login-input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 18px; text-align: center; box-sizing: border-box; }
-        .login-input:focus { outline: none; border-color: #ef4444; }
+        .login-input { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 18px; text-align: center; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -43,39 +32,21 @@
 <div id="login-overlay">
     <div class="kiosk-container" style="padding: 40px 30px; max-height: none; border-top: 8px solid #ef4444;">
         <div class="header">
-            <h1 style="font-size: 28px; color: #ef4444;">【テスト】直接ログイン</h1>
-            <p>Firebaseの登録内容をそのまま入力してください</p>
+            <h1 style="font-size: 28px; color: #ef4444;">【テスト】直接登録・ログイン</h1>
         </div>
-        <input type="text" id="test-email" class="login-input" placeholder="メールアドレス全体 (例: 001@onebo.local)">
-        <input type="text" id="test-password" class="login-input" placeholder="パスワード全体 (例: 123456)">
-        <button class="btn-call" style="background-color: #ef4444;" onclick="attemptLogin()">照合テスト実行</button>
+        <input type="text" id="test-email" class="login-input" placeholder="メールアドレス全体 (例: b@b.com)">
+        <input type="text" id="test-password" class="login-input" placeholder="パスワード全体 (例: bbbbbb)">
+        
+        <button class="btn-call" style="background-color: #ef4444;" onclick="attemptLogin()">① ログインしてみる</button>
+        <button class="btn-register" onclick="attemptRegister()">② システム側から強制登録する</button>
+        
         <div id="login-error" style="color: #ef4444; margin-top: 15px; font-weight: bold; font-size: 14px; min-height: 20px;"></div>
     </div>
 </div>
 
 <div class="kiosk-container" id="main-container">
     <div id="caller-ui">
-        <div class="header">
-            <h1>メディカルOne-Bo</h1>
-            <p>繋ぎたい相手の番号（7桁）を押してください</p>
-            <div class="my-number-badge" id="my-number-display" style="display: none;"></div>
-        </div>
-        <div class="display" id="pin-display"></div>
-        <div class="keypad">
-            <button class="key" onclick="inputDigit(1)">1</button>
-            <button class="key" onclick="inputDigit(2)">2</button>
-            <button class="key" onclick="inputDigit(3)">3</button>
-            <button class="key" onclick="inputDigit(4)">4</button>
-            <button class="key" onclick="inputDigit(5)">5</button>
-            <button class="key" onclick="inputDigit(6)">6</button>
-            <button class="key" onclick="inputDigit(7)">7</button>
-            <button class="key" onclick="inputDigit(8)">8</button>
-            <button class="key" onclick="inputDigit(9)">9</button>
-            <button class="key key-clear" onclick="clearDigit()">訂正</button>
-            <button class="key" onclick="inputDigit(0)">0</button>
-            <button class="key" style="visibility: hidden;"></button> 
-        </div>
-        <button class="btn-call" id="call-button" onclick="makeCall()" disabled>発 信 📞</button>
+        <div class="header"><h1>メディカルOne-Bo</h1></div>
     </div>
 </div>
 
@@ -92,50 +63,48 @@
     const db = firebase.firestore();
     const auth = firebase.auth(); 
 
-    let myReceiverNumber = "";
-
     window.onload = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const receiverId = urlParams.get('id');       
-
-        if (receiverId && receiverId.length === 8) {
-            myReceiverNumber = receiverId;
-            document.getElementById("my-number-display").innerText = `この端末の番号：${myReceiverNumber}`;
-            document.getElementById("my-number-display").style.display = "inline-block";
-            
-            // 待機の前にテスト画面を表示
-            document.getElementById("login-overlay").style.display = "flex";
-        }
+        document.getElementById("login-overlay").style.display = "flex";
     };
 
-    // --- 魔法一切なしの直接ログイン処理 ---
+    // --- ① ログインテスト ---
     function attemptLogin() {
         const email = document.getElementById("test-email").value.trim();
         const password = document.getElementById("test-password").value.trim();
 
-        if(!email || !password) {
-            document.getElementById("login-error").innerText = "両方入力してください";
-            return;
-        }
-
-        document.getElementById("login-error").style.color = "#64748b";
-        document.getElementById("login-error").innerText = `送信中... [${email}] / [${password}]`;
+        if(!email || !password) return;
+        document.getElementById("login-error").innerText = `送信中...`;
 
         auth.signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // 成功！
-                alert("🎉 大成功です！Firebaseの登録情報と完璧に一致しました！");
+            .then(() => {
+                alert("🎉 ログイン成功！");
                 document.getElementById("login-overlay").style.display = "none";
-                // 成功した場合は待機状態にする（省略形）
             })
             .catch((error) => {
-                // 失敗！
                 document.getElementById("login-error").style.color = "#ef4444";
-                document.getElementById("login-error").innerText = `エラー: ${error.code}\n入力値がFirebaseと1文字でも違っています`;
+                document.getElementById("login-error").innerText = `エラー: ${error.code}`;
             });
     }
 
-    // (※以下の通話処理等はテスト画面の裏側用なのでそのまま残しています)
+    // --- ② 強制登録テスト（★今回の主役） ---
+    function attemptRegister() {
+        const email = document.getElementById("test-email").value.trim();
+        const password = document.getElementById("test-password").value.trim();
+
+        if(!email || !password) return;
+        document.getElementById("login-error").style.color = "#10b981";
+        document.getElementById("login-error").innerText = `Firebaseに強制登録中...`;
+
+        auth.createUserWithEmailAndPassword(email, password)
+            .then(() => {
+                alert("🎉 大成功！Firebaseへのユーザー作成とログインが同時に完了しました！\n（Firebaseの画面を開かなくても、プログラムから完璧に繋がっています）");
+                document.getElementById("login-overlay").style.display = "none";
+            })
+            .catch((error) => {
+                document.getElementById("login-error").style.color = "#ef4444";
+                document.getElementById("login-error").innerText = `登録エラー: ${error.code}\n※この英語メッセージを教えてください！`;
+            });
+    }
 </script>
 </body>
 </html>
