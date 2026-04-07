@@ -59,7 +59,7 @@
         <input type="text" id="staff-id" class="login-input" placeholder="スタッフ番号 (例: 001)">
         <input type="password" id="staff-pin" class="login-input" placeholder="暗証番号 (4桁)" inputmode="numeric" maxlength="4">
         <button class="btn-call" style="background-color: #0056B3;" onclick="attemptLogin()">ログイン</button>
-        <div id="login-error" style="color: #ef4444; margin-top: 15px; font-weight: bold; font-size: 14px; height: 20px;"></div>
+        <div id="login-error" style="color: #ef4444; margin-top: 15px; font-weight: bold; font-size: 14px; min-height: 20px;"></div>
     </div>
 </div>
 
@@ -136,17 +136,26 @@
             badge.style.display = "inline-block";
             badge.innerText = `この端末の番号：${myReceiverNumber}`;
             
-            // 着信機として開いた場合はログイン画面を表示
             document.getElementById("login-overlay").style.display = "flex";
         }
         updateDisplay();
     };
 
-    // --- ログイン処理 ---
+    // --- 全角を半角に変換する魔法の関数 ---
+    function toHalfWidth(str) {
+        return str.replace(/[０-９]/g, function(s) {
+            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+        });
+    }
+
+    // --- ログイン処理（絶対突破版） ---
     function attemptLogin() {
-        // .trim()でコピペ時の見えないスペースを自動削除
-        const staffId = document.getElementById("staff-id").value.trim();
-        const pin = document.getElementById("staff-pin").value.trim();
+        let rawStaffId = document.getElementById("staff-id").value.trim();
+        let rawPin = document.getElementById("staff-pin").value.trim();
+
+        // 全角数字が入力されても、システム側で勝手に半角に修正します！
+        const staffId = toHalfWidth(rawStaffId);
+        const pin = toHalfWidth(rawPin);
 
         if(!staffId || pin.length !== 4) {
             document.getElementById("login-error").innerText = "スタッフ番号と4桁の暗証番号を入力してください";
@@ -157,11 +166,11 @@
         document.getElementById("login-error").innerText = "認証中...";
 
         const email = staffId + "@onebo.local";
-        const password = pin + "_plaza"; 
+        // 記号（_plaza）をやめて「56」に変更。これで記号の入力ミスも防げます！
+        const password = pin + "56"; 
 
         auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                // ログイン成功
                 currentStaffId = staffId;
                 document.getElementById("login-overlay").style.display = "none";
                 writeAuditLog("LOGIN"); 
@@ -169,12 +178,10 @@
             })
             .catch((error) => {
                 document.getElementById("login-error").style.color = "#ef4444";
-                // 失敗時はFirebaseの生のエラーコードを表示して原因を特定
-                document.getElementById("login-error").innerText = "エラー詳細: " + error.code;
+                document.getElementById("login-error").innerText = "エラー詳細: " + error.code + " (送信情報: " + email + ")";
             });
     }
 
-    // --- 監査ログ記録処理 ---
     function writeAuditLog(actionType) {
         db.collection("audit_logs").add({
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -184,7 +191,6 @@
         }).catch((err) => console.error("ログ保存エラー", err));
     }
 
-    // --- テンキー・通話処理 ---
     function inputDigit(digit) { 
         if (currentPin.length < 8) { 
             currentPin += digit; 
@@ -305,7 +311,7 @@
     function answerCall() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
         docRef.update({ status: "in_call" }).then(function() {
-            writeAuditLog("ANSWER_CALL"); // 応答ログの記録
+            writeAuditLog("ANSWER_CALL"); 
             docRef.get().then(function(doc) {
                 openVideoRoom(doc.data().url, myReceiverNumber);
             });
