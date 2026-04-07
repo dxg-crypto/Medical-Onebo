@@ -42,7 +42,7 @@
         @keyframes flash { from { background-color: #ef4444; transform: scale(1); } to { background-color: #b91c1c; transform: scale(1.02); } }
         .btn-answer { background-color: #10b981; color: white; border: none; border-radius: 12px; font-size: 24px; font-weight: 900; padding: 20px 0; width: 100%; margin-top: 30px; cursor: pointer; box-shadow: 0 8px 15px rgba(16, 185, 129, 0.4); }
 
-        /* 追加：ログイン画面のスタイル */
+        /* ログイン画面のスタイル */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background-color: #f0f4f8; z-index: 200; flex-direction: column; justify-content: center; align-items: center; }
         .login-input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #cbd5e1; font-size: 18px; text-align: center; box-sizing: border-box; }
         .login-input:focus { outline: none; border-color: #0056B3; }
@@ -118,13 +118,13 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth(); // 追加：認証機能
+    const auth = firebase.auth(); 
 
     let currentPin = "";
     let myReceiverNumber = "";
     let unsubscribe = null; 
     let targetCallingNumber = ""; 
-    let currentStaffId = ""; // ログイン中のスタッフ番号
+    let currentStaffId = ""; 
 
     window.onload = () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -136,16 +136,17 @@
             badge.style.display = "inline-block";
             badge.innerText = `この端末の番号：${myReceiverNumber}`;
             
-            // 【重要】いきなり待機せず、まずはログイン画面でブロックする！
+            // 着信機として開いた場合はログイン画面を表示
             document.getElementById("login-overlay").style.display = "flex";
         }
         updateDisplay();
     };
 
-    // --- 追加：ログインと監査ログ処理 ---
+    // --- ログイン処理 ---
     function attemptLogin() {
-        const staffId = document.getElementById("staff-id").value;
-        const pin = document.getElementById("staff-pin").value;
+        // .trim()でコピペ時の見えないスペースを自動削除
+        const staffId = document.getElementById("staff-id").value.trim();
+        const pin = document.getElementById("staff-pin").value.trim();
 
         if(!staffId || pin.length !== 4) {
             document.getElementById("login-error").innerText = "スタッフ番号と4桁の暗証番号を入力してください";
@@ -160,20 +161,21 @@
 
         auth.signInWithEmailAndPassword(email, password)
             .then((userCredential) => {
-                // ログイン成功！
+                // ログイン成功
                 currentStaffId = staffId;
                 document.getElementById("login-overlay").style.display = "none";
-                writeAuditLog("LOGIN"); // 監査ログ記録
-                startListening();       // 着信の待機をここで初めて開始する
+                writeAuditLog("LOGIN"); 
+                startListening();       
             })
             .catch((error) => {
                 document.getElementById("login-error").style.color = "#ef4444";
-                document.getElementById("login-error").innerText = "番号が間違っています。";
+                // 失敗時はFirebaseの生のエラーコードを表示して原因を特定
+                document.getElementById("login-error").innerText = "エラー詳細: " + error.code;
             });
     }
 
+    // --- 監査ログ記録処理 ---
     function writeAuditLog(actionType) {
-        // ガイドライン(2-⑪)に対応するための操作履歴データベース
         db.collection("audit_logs").add({
             timestamp: firebase.firestore.FieldValue.serverTimestamp(),
             action: actionType,
@@ -181,8 +183,8 @@
             terminalId: myReceiverNumber
         }).catch((err) => console.error("ログ保存エラー", err));
     }
-    // ---------------------------------
 
+    // --- テンキー・通話処理 ---
     function inputDigit(digit) { 
         if (currentPin.length < 8) { 
             currentPin += digit; 
@@ -303,7 +305,7 @@
     function answerCall() {
         var docRef = db.collection("rooms").doc(myReceiverNumber);
         docRef.update({ status: "in_call" }).then(function() {
-            writeAuditLog("ANSWER_CALL"); // 追加：通話に出たログを記録
+            writeAuditLog("ANSWER_CALL"); // 応答ログの記録
             docRef.get().then(function(doc) {
                 openVideoRoom(doc.data().url, myReceiverNumber);
             });
