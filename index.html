@@ -141,21 +141,24 @@
         updateDisplay();
     };
 
-    // --- 全角を半角に変換する魔法の関数 ---
     function toHalfWidth(str) {
         return str.replace(/[０-９]/g, function(s) {
             return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
         });
     }
 
-    // --- ログイン処理（絶対突破版） ---
+    // --- ログイン処理（強制ゼロ埋め最強版） ---
     function attemptLogin() {
         let rawStaffId = document.getElementById("staff-id").value.trim();
         let rawPin = document.getElementById("staff-pin").value.trim();
 
-        // 全角数字が入力されても、システム側で勝手に半角に修正します！
-        const staffId = toHalfWidth(rawStaffId);
+        let staffId = toHalfWidth(rawStaffId);
         const pin = toHalfWidth(rawPin);
+
+        // ★最強の解決策：端末が「1」に変えてしまっても、強制的に「001」に戻す魔法
+        if (staffId.length > 0) {
+            staffId = staffId.padStart(3, '0');
+        }
 
         if(!staffId || pin.length !== 4) {
             document.getElementById("login-error").innerText = "スタッフ番号と4桁の暗証番号を入力してください";
@@ -165,8 +168,8 @@
         document.getElementById("login-error").style.color = "#64748b";
         document.getElementById("login-error").innerText = "認証中...";
 
+        // 確実に「001@onebo.local」になる
         const email = staffId + "@onebo.local";
-        // 記号（_plaza）をやめて「56」に変更。これで記号の入力ミスも防げます！
         const password = pin + "56"; 
 
         auth.signInWithEmailAndPassword(email, password)
